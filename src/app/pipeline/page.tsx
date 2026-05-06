@@ -2,17 +2,35 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Plus, Clock, X, Send, MessageSquare,
-  Phone
+  Plus,
+  Clock,
+  X,
+  Send,
+  MessageSquare,
+  Phone,
+  Mail,
 } from 'lucide-react'
-import { formatCurrency, daysSince, getUrgencyColor, getServiceLabel, getStageLabel, SERVICE_TYPES, STAGES } from '@/lib/utils'
-import Badge from '@/components/ui/Badge'
+import {
+  formatCurrency,
+  daysSince,
+  getUrgencyColor,
+  getServiceLabel,
+  getStageLabel,
+  SERVICE_TYPES,
+  STAGES,
+} from '@/lib/utils'
 import Modal from '@/components/ui/Modal'
 
 interface Deal {
   id: string
   clientId: string
-  client: { id: string; name: string; company: string | null; whatsapp: string | null; email: string | null }
+  client: {
+    id: string
+    name: string
+    company: string | null
+    whatsapp: string | null
+    email: string | null
+  }
   serviceType: string
   estimatedValue: number
   stage: string
@@ -30,13 +48,23 @@ interface Client {
   company: string | null
 }
 
-const stageConfig: Record<string, { label: string; color: string; bgColor: string }> = {
-  lead_novo: { label: 'Lead Novo', color: 'text-blue-600', bgColor: 'bg-blue-50 border-blue-200' },
-  qualificacao: { label: 'Qualificação', color: 'text-cyan-600', bgColor: 'bg-cyan-50 border-cyan-200' },
-  proposta_enviada: { label: 'Proposta Enviada', color: 'text-violet-600', bgColor: 'bg-violet-50 border-violet-200' },
-  negociacao: { label: 'Negociação', color: 'text-amber-600', bgColor: 'bg-amber-50 border-amber-200' },
-  fechado_ganho: { label: 'Fechado (Ganho)', color: 'text-emerald-600', bgColor: 'bg-emerald-50 border-emerald-200' },
-  fechado_perdido: { label: 'Fechado (Perdido)', color: 'text-red-600', bgColor: 'bg-red-50 border-red-200' },
+type StageTone = 'success' | 'danger' | 'neutral'
+
+const stageTone: Record<string, StageTone> = {
+  prospeccao: 'neutral',
+  primeiro_contato: 'neutral',
+  diagnostico: 'neutral',
+  proposta_enviada: 'neutral',
+  negociacao: 'neutral',
+  fechado_ganho: 'success',
+  fechado_perdido: 'danger',
+  em_andamento: 'success',
+}
+
+function toneColor(tone: StageTone) {
+  if (tone === 'success') return 'var(--color-success)'
+  if (tone === 'danger') return 'var(--color-danger)'
+  return 'var(--color-text-muted)'
 }
 
 export default function PipelinePage() {
@@ -47,6 +75,7 @@ export default function PipelinePage() {
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null)
   const [newActivity, setNewActivity] = useState('')
   const [draggedDealId, setDraggedDealId] = useState<string | null>(null)
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null)
   const [lostReason, setLostReason] = useState('')
   const [showLostModal, setShowLostModal] = useState(false)
   const [pendingLostDealId, setPendingLostDealId] = useState<string | null>(null)
@@ -102,7 +131,6 @@ export default function PipelinePage() {
       setShowLostModal(true)
       return
     }
-
     await fetch('/api/deals', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -116,7 +144,11 @@ export default function PipelinePage() {
     await fetch('/api/deals', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: pendingLostDealId, stage: 'fechado_perdido', lostReason }),
+      body: JSON.stringify({
+        id: pendingLostDealId,
+        stage: 'fechado_perdido',
+        lostReason,
+      }),
     })
     setShowLostModal(false)
     setLostReason('')
@@ -138,7 +170,6 @@ export default function PipelinePage() {
     })
     setNewActivity('')
     fetchDeals()
-    // Refresh selected deal
     const res = await fetch('/api/deals')
     const data = await res.json()
     const updated = data.find((d: Deal) => d.id === selectedDeal.id)
@@ -149,18 +180,19 @@ export default function PipelinePage() {
     setDraggedDealId(dealId)
     e.dataTransfer.effectAllowed = 'move'
   }
-
-  function handleDragOver(e: React.DragEvent) {
+  function handleDragOver(e: React.DragEvent, stage: string) {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+    if (dragOverStage !== stage) setDragOverStage(stage)
   }
-
+  function handleDragLeave() {
+    setDragOverStage(null)
+  }
   function handleDrop(e: React.DragEvent, stage: string) {
     e.preventDefault()
-    if (draggedDealId) {
-      moveDeal(draggedDealId, stage)
-      setDraggedDealId(null)
-    }
+    if (draggedDealId) moveDeal(draggedDealId, stage)
+    setDraggedDealId(null)
+    setDragOverStage(null)
   }
 
   const getStageDeals = (stage: string) => deals.filter((d) => d.stage === stage)
@@ -170,63 +202,81 @@ export default function PipelinePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-success)] animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 pt-12 lg:pt-0">
+    <div className="space-y-5 pt-12 lg:pt-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Pipeline de Vendas</h1>
-          <p className="text-slate-500 mt-1">Arraste os cards para mover entre etapas</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+            Arraste os cards para mover entre etapas
+          </p>
         </div>
         <button
           onClick={() => setShowNewDeal(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/25"
+          className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-medium bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90"
         >
-          <Plus size={18} />
+          <Plus size={16} />
           Novo Negócio
         </button>
       </div>
 
-      {/* Kanban Board */}
-      <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: '70vh' }}>
+      {/* Board */}
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1" style={{ minHeight: '70vh' }}>
         {STAGES.map((stage) => {
-          const config = stageConfig[stage]
+          const tone = stageTone[stage]
           const stageDeals = getStageDeals(stage)
           const total = getStageTotal(stage)
+          const isOver = dragOverStage === stage
+          const labelColor = toneColor(tone)
 
           return (
             <div
               key={stage}
-              className="flex-shrink-0 w-72 flex flex-col"
-              onDragOver={handleDragOver}
+              className="flex-shrink-0 w-64 flex flex-col rounded-lg border bg-[var(--color-surface)]"
+              style={{
+                borderColor: isOver ? 'var(--color-success)' : 'var(--color-border)',
+                transition: 'border-color 0.15s ease',
+              }}
+              onDragOver={(e) => handleDragOver(e, stage)}
+              onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, stage)}
             >
-              {/* Column Header */}
-              <div className={`p-4 rounded-t-2xl border-t-2 ${config.bgColor}`}>
-                <div className="flex items-center justify-between">
-                  <h3 className={`text-sm font-semibold ${config.color}`}>{config.label}</h3>
-                  <span className="text-xs font-medium text-slate-500 bg-white px-2 py-0.5 rounded-full">
+              {/* Column header */}
+              <div className="px-3 py-3 flex items-center justify-between border-b border-[var(--color-border)]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: labelColor }}
+                  />
+                  <h3 className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: labelColor }}>
+                    {getStageLabel(stage)}
+                  </h3>
+                  <span className="text-xs text-[var(--color-text-muted)] tabular-nums">
                     {stageDeals.length}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">{formatCurrency(total)}</p>
+                <span className="text-[11px] text-[var(--color-text-muted)] tabular-nums whitespace-nowrap">
+                  {formatCurrency(total)}
+                </span>
               </div>
 
               {/* Cards */}
-              <div className="flex-1 bg-slate-50/50 rounded-b-2xl p-2 space-y-2 min-h-[200px]">
+              <div className="flex-1 p-2 space-y-2 min-h-[200px]">
                 {stageDeals.map((deal) => {
                   const days = daysSince(deal.stageEnteredAt)
                   const urgency = getUrgencyColor(days)
-                  const urgencyColors = {
-                    green: 'bg-emerald-400',
-                    yellow: 'bg-amber-400',
-                    red: 'bg-red-500 pulse-urgency-red',
-                  }
+                  const urgencyBg =
+                    urgency === 'red'
+                      ? 'var(--color-danger)'
+                      : urgency === 'yellow'
+                      ? 'var(--color-warning)'
+                      : 'var(--color-success)'
 
                   return (
                     <div
@@ -234,46 +284,57 @@ export default function PipelinePage() {
                       draggable
                       onDragStart={(e) => handleDragStart(e, deal.id)}
                       onClick={() => setSelectedDeal(deal)}
-                      className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md hover:border-indigo-200 transition-all group"
+                      className="rounded-lg p-3 cursor-pointer border bg-[var(--color-bg)] border-[var(--color-border)] hover:border-[var(--color-text-muted)] transition-colors"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-slate-700 group-hover:text-indigo-600 transition-colors">
-                            {deal.client.name}
-                          </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{deal.client.name}</p>
                           {deal.client.company && (
-                            <p className="text-xs text-slate-400 mt-0.5">{deal.client.company}</p>
+                            <p className="text-[11px] text-[var(--color-text-muted)] truncate mt-0.5">
+                              {deal.client.company}
+                            </p>
                           )}
                         </div>
-                        <div className={`w-2.5 h-2.5 rounded-full ${urgencyColors[urgency]} flex-shrink-0 mt-1`} />
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+                          style={{ background: urgencyBg }}
+                          title={`${days} dia(s) na etapa`}
+                        />
                       </div>
 
-                      <div className="mt-3 flex items-center gap-2">
-                        <Badge variant={deal.serviceType === 'agente_ia' ? 'purple' : deal.serviceType === 'landing_page' ? 'info' : 'default'}>
-                          {getServiceLabel(deal.serviceType)}
-                        </Badge>
-                      </div>
+                      <p className="text-[11px] text-[var(--color-text-muted)] mt-2">
+                        {getServiceLabel(deal.serviceType)}
+                      </p>
 
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-700">
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold tabular-nums">
                           {formatCurrency(deal.estimatedValue)}
                         </span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <Clock size={12} />
+                        <span className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 tabular-nums">
+                          <Clock size={11} />
                           {days}d
                         </span>
                       </div>
 
                       {deal.tasks.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-slate-100">
-                          <p className="text-xs text-amber-600 font-medium">
-                            {deal.tasks.length} tarefa{deal.tasks.length > 1 ? 's' : ''} pendente{deal.tasks.length > 1 ? 's' : ''}
+                        <div className="mt-2 pt-2 border-t border-[var(--color-border)]">
+                          <p
+                            className="text-[11px] font-medium"
+                            style={{ color: 'var(--color-warning)' }}
+                          >
+                            {deal.tasks.length} tarefa{deal.tasks.length > 1 ? 's' : ''} pendente
+                            {deal.tasks.length > 1 ? 's' : ''}
                           </p>
                         </div>
                       )}
                     </div>
                   )
                 })}
+                {stageDeals.length === 0 && (
+                  <div className="h-full flex items-center justify-center py-8">
+                    <p className="text-[11px] text-[var(--color-text-muted)]">Vazio</p>
+                  </div>
+                )}
               </div>
             </div>
           )
@@ -283,72 +344,96 @@ export default function PipelinePage() {
       {/* New Deal Modal */}
       <Modal open={showNewDeal} onClose={() => setShowNewDeal(false)} title="Novo Negócio">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Cliente</label>
+          <Field label="Cliente">
             <select
               value={newDeal.clientId}
               onChange={(e) => setNewDeal({ ...newDeal, clientId: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success)]"
             >
               <option value="">Selecione um cliente</option>
               {clients.map((c) => (
-                <option key={c.id} value={c.id}>{c.name} {c.company ? `(${c.company})` : ''}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.company ? `(${c.company})` : ''}
+                </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Serviço</label>
+          </Field>
+          <Field label="Serviço">
             <select
               value={newDeal.serviceType}
               onChange={(e) => setNewDeal({ ...newDeal, serviceType: e.target.value })}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success)]"
             >
               {SERVICE_TYPES.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Valor Estimado (R$)</label>
+          </Field>
+          <Field label="Valor estimado (R$)">
             <input
               type="number"
               value={newDeal.estimatedValue}
               onChange={(e) => setNewDeal({ ...newDeal, estimatedValue: e.target.value })}
               placeholder="5000"
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success)]"
             />
-          </div>
-          <div className="flex gap-3 pt-2">
+          </Field>
+          <div className="flex gap-2 pt-2">
             <button
               onClick={() => setShowNewDeal(false)}
-              className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200 transition-all"
+              className="flex-1 h-9 rounded-lg text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
             >
               Cancelar
             </button>
             <button
               onClick={createDeal}
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/25"
+              className="flex-1 h-9 rounded-lg text-sm font-semibold bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90"
             >
-              Criar Negócio
+              Criar negócio
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Lost Reason Modal */}
-      <Modal open={showLostModal} onClose={() => { setShowLostModal(false); setPendingLostDealId(null) }} title="Motivo da Perda">
+      <Modal
+        open={showLostModal}
+        onClose={() => {
+          setShowLostModal(false)
+          setPendingLostDealId(null)
+        }}
+        title="Motivo da perda"
+      >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">Qual o motivo do negócio ter sido perdido?</p>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Qual o motivo do negócio ter sido perdido?
+          </p>
           <textarea
             value={lostReason}
             onChange={(e) => setLostReason(e.target.value)}
             rows={3}
-            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-            placeholder="Ex: Preço acima do orçamento, optou por outra empresa..."
+            className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-danger)] resize-none"
+            placeholder="Ex.: preço acima do orçamento, optou por outra empresa..."
           />
-          <div className="flex gap-3">
-            <button onClick={() => { setShowLostModal(false); setPendingLostDealId(null) }} className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200">Cancelar</button>
-            <button onClick={confirmLost} className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600">Confirmar Perda</button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowLostModal(false)
+                setPendingLostDealId(null)
+              }}
+              className="flex-1 h-9 rounded-lg text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmLost}
+              className="flex-1 h-9 rounded-lg text-sm font-semibold text-white"
+              style={{ background: 'var(--color-danger)' }}
+            >
+              Confirmar perda
+            </button>
           </div>
         </div>
       </Modal>
@@ -356,82 +441,110 @@ export default function PipelinePage() {
       {/* Deal Detail Panel */}
       {selectedDeal && (
         <>
-          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setSelectedDeal(null)} />
-          <div className="fixed top-0 right-0 h-full w-full max-w-lg bg-white z-50 shadow-2xl animate-slide-in-right overflow-y-auto">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-lg font-bold text-slate-800">{selectedDeal.client.name}</h2>
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSelectedDeal(null)} />
+          <aside className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--color-bg)] text-[var(--color-text)] z-50 border-l border-[var(--color-border)] animate-slide-in-right overflow-y-auto">
+            <header className="px-5 py-4 border-b border-[var(--color-border)] flex items-center justify-between sticky top-0 bg-[var(--color-bg)] z-10">
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold truncate">{selectedDeal.client.name}</h2>
                 {selectedDeal.client.company && (
-                  <p className="text-sm text-slate-500">{selectedDeal.client.company}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] truncate">
+                    {selectedDeal.client.company}
+                  </p>
                 )}
               </div>
-              <button onClick={() => setSelectedDeal(null)} className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100">
-                <X size={18} />
+              <button
+                onClick={() => setSelectedDeal(null)}
+                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
+                aria-label="Fechar"
+              >
+                <X size={16} />
               </button>
-            </div>
+            </header>
 
-            <div className="p-6 space-y-6">
-              {/* Deal Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500">Serviço</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{getServiceLabel(selectedDeal.serviceType)}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500">Valor</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{formatCurrency(selectedDeal.estimatedValue)}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500">Etapa</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{getStageLabel(selectedDeal.stage)}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl">
-                  <p className="text-xs text-slate-500">Dias na Etapa</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{daysSince(selectedDeal.stageEnteredAt)} dias</p>
-                </div>
+            <div className="p-5 space-y-6">
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <InfoTile label="Serviço" value={getServiceLabel(selectedDeal.serviceType)} />
+                <InfoTile label="Valor" value={formatCurrency(selectedDeal.estimatedValue)} />
+                <InfoTile label="Etapa" value={getStageLabel(selectedDeal.stage)} />
+                <InfoTile
+                  label="Dias na etapa"
+                  value={`${daysSince(selectedDeal.stageEnteredAt)} dias`}
+                />
               </div>
 
-              {/* Contact Info */}
+              {/* Contact */}
               {(selectedDeal.client.whatsapp || selectedDeal.client.email) && (
                 <div className="flex gap-2">
                   {selectedDeal.client.whatsapp && (
-                    <a href={`https://wa.me/${selectedDeal.client.whatsapp.replace(/\D/g, '')}`} target="_blank" className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-medium hover:bg-emerald-100 transition-all">
-                      <Phone size={14} /> WhatsApp
+                    <a
+                      href={`https://wa.me/${selectedDeal.client.whatsapp.replace(/\D/g, '')}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+                    >
+                      <Phone size={12} /> WhatsApp
                     </a>
                   )}
                   {selectedDeal.client.email && (
-                    <a href={`mailto:${selectedDeal.client.email}`} className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium hover:bg-blue-100 transition-all">
-                      <Send size={14} /> Email
+                    <a
+                      href={`mailto:${selectedDeal.client.email}`}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+                    >
+                      <Mail size={12} /> Email
                     </a>
                   )}
                 </div>
               )}
 
-              {/* Move Stage */}
+              {/* Move stage */}
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-2">Mover para</p>
-                <div className="flex flex-wrap gap-2">
-                  {STAGES.filter(s => s !== selectedDeal.stage).map(stage => (
-                    <button
-                      key={stage}
-                      onClick={() => { moveDeal(selectedDeal.id, stage); setSelectedDeal(null) }}
-                      className="px-3 py-1.5 text-xs font-medium bg-slate-100 text-slate-600 rounded-lg hover:bg-indigo-100 hover:text-indigo-600 transition-all"
-                    >
-                      {getStageLabel(stage)}
-                    </button>
-                  ))}
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+                  Mover para
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {STAGES.filter((s) => s !== selectedDeal.stage).map((stage) => {
+                    const tone = stageTone[stage]
+                    return (
+                      <button
+                        key={stage}
+                        onClick={() => {
+                          moveDeal(selectedDeal.id, stage)
+                          setSelectedDeal(null)
+                        }}
+                        className="px-2.5 h-7 text-[11px] font-medium rounded-md border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+                        style={{
+                          color:
+                            tone === 'success'
+                              ? 'var(--color-success)'
+                              : tone === 'danger'
+                              ? 'var(--color-danger)'
+                              : 'var(--color-text)',
+                        }}
+                      >
+                        {getStageLabel(stage)}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
-              {/* Pending Tasks */}
+              {/* Tasks */}
               {selectedDeal.tasks.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-slate-700 mb-2">Tarefas Pendentes</p>
-                  <div className="space-y-2">
-                    {selectedDeal.tasks.map(task => (
-                      <div key={task.id} className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg">
-                        <div className="w-2 h-2 bg-amber-400 rounded-full" />
-                        <span className="text-xs text-slate-700 flex-1">{task.title}</span>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+                    Tarefas pendentes
+                  </p>
+                  <div className="space-y-1.5">
+                    {selectedDeal.tasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-2 px-3 py-2 rounded-md border border-[var(--color-border)]"
+                      >
+                        <span
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: 'var(--color-warning)' }}
+                        />
+                        <span className="text-xs flex-1 truncate">{task.title}</span>
                       </div>
                     ))}
                   </div>
@@ -440,51 +553,83 @@ export default function PipelinePage() {
 
               {/* Proposal */}
               {selectedDeal.proposal && (
-                <div className="p-3 bg-violet-50 rounded-xl border border-violet-100">
-                  <p className="text-xs text-violet-500 font-medium">Proposta Vinculada</p>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{selectedDeal.proposal.title}</p>
-                  <Badge variant="purple">{selectedDeal.proposal.status}</Badge>
+                <div className="rounded-lg p-3 border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">
+                    Proposta vinculada
+                  </p>
+                  <p className="text-sm font-medium mt-1">{selectedDeal.proposal.title}</p>
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5 capitalize">
+                    {selectedDeal.proposal.status}
+                  </p>
                 </div>
               )}
 
-              {/* Activity History */}
+              {/* Activity */}
               <div>
-                <p className="text-sm font-medium text-slate-700 mb-3">Histórico de Interações</p>
-
-                {/* Add Activity */}
-                <div className="flex gap-2 mb-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
+                  Histórico
+                </p>
+                <div className="flex gap-2 mb-3">
                   <input
                     type="text"
                     value={newActivity}
                     onChange={(e) => setNewActivity(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addActivity()}
                     placeholder="Registrar atividade..."
-                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 px-3 py-2 rounded-md text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success)]"
                   />
                   <button
                     onClick={addActivity}
-                    className="px-3 py-2 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600 transition-all"
+                    className="h-9 px-3 rounded-md bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90"
+                    aria-label="Adicionar atividade"
                   >
-                    <Send size={16} />
+                    <Send size={14} />
                   </button>
                 </div>
-
-                <div className="space-y-3">
-                  {selectedDeal.activities.map(activity => (
-                    <div key={activity.id} className="flex gap-3 p-3 bg-slate-50 rounded-xl">
-                      <MessageSquare size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm text-slate-700">{activity.content}</p>
-                        <p className="text-xs text-slate-400 mt-1">{new Date(activity.createdAt).toLocaleString('pt-BR')}</p>
+                <div className="space-y-2">
+                  {selectedDeal.activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex gap-2 px-3 py-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]"
+                    >
+                      <MessageSquare
+                        size={12}
+                        className="text-[var(--color-text-muted)] mt-0.5 flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs">{activity.content}</p>
+                        <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                          {new Date(activity.createdAt).toLocaleString('pt-BR')}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
         </>
       )}
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1.5">
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg px-3 py-2.5 border border-[var(--color-border)]">
+      <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">{label}</p>
+      <p className="text-sm font-medium mt-0.5 truncate">{value}</p>
     </div>
   )
 }

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         clientId: body.clientId,
         serviceType: body.serviceType,
         estimatedValue: parseFloat(body.estimatedValue),
-        stage: body.stage || 'lead_novo',
+        stage: body.stage || 'prospeccao',
       },
       include: { client: true },
     })
@@ -85,8 +85,8 @@ export async function PUT(req: NextRequest) {
         },
       })
 
-      // If closed as won, update client status
-      if (data.stage === 'fechado_ganho') {
+      // If closed as won or moving to active delivery, update client status
+      if (data.stage === 'fechado_ganho' || data.stage === 'em_andamento') {
         await prisma.client.update({
           where: { id: deal.clientId },
           data: { status: 'ativo' },

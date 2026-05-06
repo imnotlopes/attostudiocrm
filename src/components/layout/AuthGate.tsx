@@ -16,10 +16,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] text-[var(--color-text)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Carregando...</p>
+          <div className="w-9 h-9 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-success)] animate-spin" />
+          <p className="text-sm text-[var(--color-text-muted)]">Carregando...</p>
         </div>
       </div>
     )
@@ -33,9 +33,9 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <Sidebar />
-      <main className="lg:ml-64 min-h-screen">
+      <main className="lg:ml-60 min-h-screen">
         <div className="p-4 lg:p-8">{children}</div>
       </main>
     </div>

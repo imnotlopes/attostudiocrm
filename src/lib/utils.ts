@@ -47,12 +47,14 @@ export function getServiceLabel(type: string): string {
 
 export function getStageLabel(stage: string): string {
   const labels: Record<string, string> = {
-    lead_novo: 'Lead Novo',
-    qualificacao: 'Qualificação',
+    prospeccao: 'Prospecção',
+    primeiro_contato: 'Primeiro Contato',
+    diagnostico: 'Diagnóstico',
     proposta_enviada: 'Proposta Enviada',
     negociacao: 'Negociação',
     fechado_ganho: 'Fechado (Ganho)',
     fechado_perdido: 'Fechado (Perdido)',
+    em_andamento: 'Em Andamento',
   }
   return labels[stage] || stage
 }
@@ -99,13 +101,25 @@ export function getPriorityLabel(priority: string): string {
 }
 
 export const STAGES = [
-  'lead_novo',
-  'qualificacao',
+  'prospeccao',
+  'primeiro_contato',
+  'diagnostico',
   'proposta_enviada',
   'negociacao',
   'fechado_ganho',
   'fechado_perdido',
+  'em_andamento',
 ] as const
+
+export const ACTIVE_PIPELINE_STAGES = [
+  'prospeccao',
+  'primeiro_contato',
+  'diagnostico',
+  'proposta_enviada',
+  'negociacao',
+] as const
+
+export const TERMINAL_STAGES = ['fechado_ganho', 'fechado_perdido', 'em_andamento'] as const
 
 export const SERVICE_TYPES = [
   { value: 'site', label: 'Site Institucional' },

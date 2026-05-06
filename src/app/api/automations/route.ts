@@ -37,7 +37,7 @@ export async function POST() {
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
     const staleDeals = await prisma.deal.findMany({
       where: {
-        stage: { notIn: ['fechado_ganho', 'fechado_perdido'] },
+        stage: { notIn: ['fechado_ganho', 'fechado_perdido', 'em_andamento'] },
         lastActivityAt: { lt: fourteenDaysAgo },
       },
       include: {

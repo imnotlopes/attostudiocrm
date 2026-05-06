@@ -13,7 +13,6 @@ import {
   LogOut,
   Menu,
   X,
-  Zap,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -37,51 +36,48 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-4 left-4 z-50 lg:hidden bg-slate-900 text-white p-2 rounded-xl shadow-lg"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-[var(--color-sidebar)] text-white p-2 rounded-lg border border-white/10"
+        aria-label="Abrir menu"
       >
-        <Menu size={20} />
+        <Menu size={18} />
       </button>
 
-      {/* Overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-slate-900 text-white z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
+        className={`fixed top-0 left-0 h-full w-60 bg-[var(--color-sidebar)] text-white z-50 flex flex-col transition-transform duration-300 lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Logo */}
-        <div className="p-6 border-b border-slate-700/50">
+        <div className="p-5 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
-                <Zap size={18} className="text-white" />
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-black" style={{ background: 'var(--color-success)' }}>
+                A
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight">Atto CRM</h1>
-                <p className="text-xs text-slate-400">Gestão de vendas</p>
+                <h1 className="text-sm font-semibold tracking-tight">Atto CRM</h1>
+                <p className="text-[11px] text-white/45">Atto Studio</p>
               </div>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
-              className="lg:hidden text-slate-400 hover:text-white"
+              className="lg:hidden text-white/60 hover:text-white"
+              aria-label="Fechar menu"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
@@ -90,26 +86,28 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                   active
-                    ? 'bg-indigo-500/20 text-indigo-300 shadow-lg shadow-indigo-500/10'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    ? 'bg-white/[0.06] text-white'
+                    : 'text-white/55 hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
-                <Icon size={18} className={active ? 'text-indigo-400' : ''} />
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r" style={{ background: 'var(--color-success)' }} />
+                )}
+                <Icon size={16} className={active ? 'text-[var(--color-success)]' : ''} />
                 {item.label}
               </Link>
             )
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-700/50">
+        <div className="p-3 border-t border-white/5">
           <button
             onClick={() => signOut()}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-white/55 hover:text-[var(--color-danger)] hover:bg-white/[0.04] w-full transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             Sair
           </button>
         </div>

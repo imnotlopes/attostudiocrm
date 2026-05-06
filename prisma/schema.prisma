@@ -14,17 +14,26 @@ model User {
 }
 
 model Client {
-  id         String   @id @default(cuid())
-  name       String
-  company    String?
-  whatsapp   String?
-  email      String?
-  segment    String?
-  leadSource String?
-  status     String   @default("lead")
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  company            String?
+  whatsapp           String?
+  email              String?
+  segment            String?
+  leadSource         String?
+  niche              String?
+  acquisitionChannel String?
+  city               String?
+  serviceInterest    String?
+  packageTier        String?
+  hasSite            Boolean?
+  hasGmn             Boolean?
+  nextFollowUpAt     DateTime?
+  objection          String?
+  status             String    @default("lead")
+  notes              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   deals      Deal[]
   proposals  Proposal[]
@@ -78,6 +87,7 @@ model Contract {
   service      String
   type         String
   monthlyValue Float?
+  setupValue   Float?
   totalValue   Float?
   startDate    DateTime
   endDate      DateTime?
