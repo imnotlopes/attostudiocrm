@@ -14,6 +14,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import Image from 'next/image'
 import { useState } from 'react'
 
 const navItems = [
@@ -59,9 +60,7 @@ export default function Sidebar() {
         <div className="p-5 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-black" style={{ background: 'var(--color-success)' }}>
-                A
-              </div>
+              <Image src="/logo.png" alt="Atto Studio" width={36} height={36} className="rounded-lg object-contain" />
               <div>
                 <h1 className="text-sm font-semibold tracking-tight">Atto CRM</h1>
                 <p className="text-[11px] text-white/45">Atto Studio</p>
@@ -93,9 +92,9 @@ export default function Sidebar() {
                 }`}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r" style={{ background: 'var(--color-success)' }} />
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r" style={{ background: 'var(--color-primary)' }} />
                 )}
-                <Icon size={16} className={active ? 'text-[var(--color-success)]' : ''} />
+                <Icon size={16} style={active ? { color: 'var(--color-primary)' } : {}} />
                 {item.label}
               </Link>
             )

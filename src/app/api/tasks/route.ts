@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       data: {
         title: body.title,
         type: body.type,
-        priority: body.priority || 'media',
+        priority: body.priority || 'normal',
         dueDate: new Date(body.dueDate),
         clientId: body.clientId || null,
         dealId: body.dealId || null,

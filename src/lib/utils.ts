@@ -38,9 +38,12 @@ export function getUrgencyColor(daysInStage: number): 'green' | 'yellow' | 'red'
 
 export function getServiceLabel(type: string): string {
   const labels: Record<string, string> = {
-    site: 'Site Institucional',
-    landing_page: 'Landing Page',
-    agente_ia: 'Agente de IA',
+    gmn: 'Google Meu Negócio',
+    site: 'Criação de Site',
+    seo: 'SEO',
+    google_ads: 'Google Ads',
+    whatsapp_automation: 'Automação WhatsApp',
+    ecommerce: 'Criação de E-commerce',
   }
   return labels[type] || type
 }
@@ -71,11 +74,10 @@ export function getStatusLabel(status: string): string {
 
 export function getLeadSourceLabel(source: string): string {
   const labels: Record<string, string> = {
-    instagram: 'Instagram',
     indicacao: 'Indicação',
-    google: 'Google',
-    linkedin: 'LinkedIn',
-    outro: 'Outro',
+    prospeccao_ativa: 'Prospecção Ativa',
+    whatsapp: 'WhatsApp',
+    instagram: 'Instagram',
   }
   return labels[source] || source
 }
@@ -83,18 +85,18 @@ export function getLeadSourceLabel(source: string): string {
 export function getTaskTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     follow_up: 'Follow-up',
-    envio_proposta: 'Envio de Proposta',
-    ligacao: 'Ligação',
     reuniao: 'Reunião',
-    entrega: 'Entrega de Projeto',
+    entrega: 'Entrega',
+    cobranca: 'Cobrança',
+    ligacao: 'Ligação',
   }
   return labels[type] || type
 }
 
 export function getPriorityLabel(priority: string): string {
   const labels: Record<string, string> = {
-    alta: 'Alta',
-    media: 'Média',
+    urgente: 'Urgente',
+    normal: 'Normal',
     baixa: 'Baixa',
   }
   return labels[priority] || priority
@@ -122,29 +124,52 @@ export const ACTIVE_PIPELINE_STAGES = [
 export const TERMINAL_STAGES = ['fechado_ganho', 'fechado_perdido', 'em_andamento'] as const
 
 export const SERVICE_TYPES = [
-  { value: 'site', label: 'Site Institucional' },
-  { value: 'landing_page', label: 'Landing Page' },
-  { value: 'agente_ia', label: 'Agente de IA' },
+  { value: 'gmn', label: 'Google Meu Negócio' },
+  { value: 'site', label: 'Criação de Site' },
+  { value: 'seo', label: 'SEO' },
+  { value: 'google_ads', label: 'Google Ads' },
+  { value: 'whatsapp_automation', label: 'Automação WhatsApp' },
+  { value: 'ecommerce', label: 'Criação de E-commerce' },
 ]
 
 export const LEAD_SOURCES = [
-  { value: 'instagram', label: 'Instagram' },
   { value: 'indicacao', label: 'Indicação' },
-  { value: 'google', label: 'Google' },
-  { value: 'linkedin', label: 'LinkedIn' },
-  { value: 'outro', label: 'Outro' },
+  { value: 'prospeccao_ativa', label: 'Prospecção Ativa' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'instagram', label: 'Instagram' },
 ]
+
+export const PACKAGES = [
+  { value: 'starter', label: 'Starter — R$ 1.997' },
+  { value: 'pro', label: 'Pro — R$ 3.997' },
+  { value: 'scale', label: 'Scale — R$ 6.997' },
+]
+
+export const PACKAGE_VALUES: Record<string, number> = {
+  starter: 1997,
+  pro: 3997,
+  scale: 6997,
+}
+
+export function getPackageLabel(tier: string): string {
+  const labels: Record<string, string> = {
+    starter: 'Starter',
+    pro: 'Pro',
+    scale: 'Scale',
+  }
+  return labels[tier] || tier
+}
 
 export const TASK_TYPES = [
   { value: 'follow_up', label: 'Follow-up' },
-  { value: 'envio_proposta', label: 'Envio de Proposta' },
-  { value: 'ligacao', label: 'Ligação' },
   { value: 'reuniao', label: 'Reunião' },
-  { value: 'entrega', label: 'Entrega de Projeto' },
+  { value: 'entrega', label: 'Entrega' },
+  { value: 'cobranca', label: 'Cobrança' },
+  { value: 'ligacao', label: 'Ligação' },
 ]
 
 export const PRIORITIES = [
-  { value: 'alta', label: 'Alta' },
-  { value: 'media', label: 'Média' },
+  { value: 'urgente', label: 'Urgente' },
+  { value: 'normal', label: 'Normal' },
   { value: 'baixa', label: 'Baixa' },
 ]

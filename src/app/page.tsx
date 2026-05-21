@@ -11,8 +11,11 @@ import {
   Target,
   Calendar,
   Trophy,
+  CheckSquare,
+  Activity,
+  Percent,
 } from 'lucide-react'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import ThemeToggle from '@/components/ui/ThemeToggle'
 
 interface DashboardData {
@@ -21,6 +24,10 @@ interface DashboardData {
   revenueBreakdown: { setup: number; recurring: number }
   mrr: number
   overdueFollowUps: number
+  pendingTasks: number
+  conversionRate: number
+  totalDeals: number
+  wonDeals: number
   leadsByNiche: Array<{ niche: string; count: number }>
   conversionByChannel: Array<{ channel: string; total: number; won: number; rate: number }>
   expiringContracts: Array<{
@@ -30,6 +37,13 @@ interface DashboardData {
     client: { name: string; company: string | null }
   }>
   topClients: Array<{ name: string; company: string | null; ltv: number }>
+  recentActivities: Array<{
+    id: string
+    type: string
+    content: string
+    createdAt: string
+    client: { name: string } | null
+  }>
 }
 
 export default function DashboardPage() {
@@ -93,8 +107,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stat cards — row 1 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           icon={<TrendingUp size={18} />}
           label="MRR Ativo"
@@ -109,9 +123,26 @@ export default function DashboardPage() {
           accent={data.monthRevenue > 0 ? 'success' : 'neutral'}
         />
         <StatCard
+          icon={<Percent size={18} />}
+          label="Taxa de Conversão"
+          value={`${data.conversionRate}%`}
+          hint={`${data.wonDeals} ganhos de ${data.totalDeals} deals`}
+          accent={data.conversionRate >= 30 ? 'success' : data.conversionRate === 0 ? 'neutral' : 'neutral'}
+        />
+      </div>
+
+      {/* Stat cards — row 2 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard
           icon={<Users size={18} />}
           label="Leads Ativos"
           value={data.activeLeads.toString()}
+        />
+        <StatCard
+          icon={<CheckSquare size={18} />}
+          label="Tarefas Pendentes Hoje"
+          value={data.pendingTasks.toString()}
+          accent={data.pendingTasks > 0 ? 'neutral' : 'neutral'}
         />
         <StatCard
           icon={<AlertTriangle size={18} />}
@@ -213,6 +244,32 @@ export default function DashboardPage() {
           )}
         </Card>
       </div>
+
+      {/* Row 4 — Atividades recentes */}
+      {data.recentActivities.length > 0 && (
+        <Card title="Atividades recentes" icon={<Activity size={16} />}>
+          <ul className="space-y-1">
+            {data.recentActivities.map((a) => (
+              <li
+                key={a.id}
+                className="flex items-start gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--color-surface-2)]"
+              >
+                <span
+                  className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: 'var(--color-success)', marginTop: '6px' }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{a.content}</p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    {a.client?.name && <span className="font-medium">{a.client.name} · </span>}
+                    {formatDateTime(a.createdAt)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
     </div>
   )
 }

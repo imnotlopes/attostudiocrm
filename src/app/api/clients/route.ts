@@ -6,16 +6,17 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const search = searchParams.get('search')
-    const source = searchParams.get('source')
+    const channel = searchParams.get('channel')
 
     const where: Record<string, unknown> = {}
     if (status) where.status = status
-    if (source) where.leadSource = source
+    if (channel) where.acquisitionChannel = channel
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { company: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { niche: { contains: search, mode: 'insensitive' } },
       ]
     }
 
@@ -45,14 +46,20 @@ export async function POST(req: NextRequest) {
         company: body.company || null,
         whatsapp: body.whatsapp || null,
         email: body.email || null,
-        segment: body.segment || null,
-        leadSource: body.leadSource || null,
+        niche: body.niche || null,
+        city: body.city || null,
+        serviceInterest: body.serviceInterest || null,
+        packageTier: body.packageTier || null,
+        acquisitionChannel: body.acquisitionChannel || null,
+        hasSite: body.hasSite ?? null,
+        hasGmn: body.hasGmn ?? null,
+        nextFollowUpAt: body.nextFollowUpAt ? new Date(body.nextFollowUpAt) : null,
+        objection: body.objection || null,
         status: body.status || 'lead',
         notes: body.notes || null,
       },
     })
 
-    // Create activity for new client
     await prisma.activity.create({
       data: {
         type: 'nota',

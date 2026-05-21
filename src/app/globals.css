@@ -8,10 +8,15 @@
 
   --color-bg: #FFFFFF;
   --color-surface: #FAFAFA;
+  --color-surface-1: #F4F4F5;
   --color-surface-2: #F4F4F5;
   --color-border: #E5E7EB;
   --color-text: #0D0D0D;
+  --color-text-primary: #0D0D0D;
   --color-text-muted: #6B7280;
+  --color-primary: #7C3AED;
+  --color-primary-soft: rgba(124, 58, 237, 0.08);
+  --color-primary-hover: #6D28D9;
   --color-success: #22C55E;
   --color-success-soft: #DCFCE7;
   --color-danger: #EF4444;
@@ -28,10 +33,13 @@
 html.dark {
   --color-bg: #0D0D0D;
   --color-surface: #161616;
+  --color-surface-1: #1F1F1F;
   --color-surface-2: #1F1F1F;
   --color-border: #262626;
   --color-text: #FFFFFF;
+  --color-text-primary: #FFFFFF;
   --color-text-muted: #9CA3AF;
+  --color-primary-soft: rgba(124, 58, 237, 0.12);
   --color-success-soft: rgba(34, 197, 94, 0.12);
   --color-danger-soft: rgba(239, 68, 68, 0.12);
   --color-warning-soft: rgba(245, 158, 11, 0.12);

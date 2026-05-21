@@ -25,9 +25,27 @@ interface Client {
   name: string
 }
 
+interface Deal {
+  id: string
+  title: string
+  clientId: string
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 16px',
+  background: 'var(--color-surface-1)',
+  border: '1px solid var(--color-border)',
+  borderRadius: '12px',
+  fontSize: '14px',
+  color: 'var(--color-text-primary)',
+  outline: 'none',
+}
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [view, setView] = useState<'list' | 'calendar'>('list')
@@ -37,7 +55,12 @@ export default function TasksPage() {
   const [calendarDate, setCalendarDate] = useState(new Date())
 
   const [form, setForm] = useState({
-    title: '', type: 'follow_up', priority: 'media', dueDate: new Date().toISOString().split('T')[0], clientId: ''
+    title: '',
+    type: 'follow_up',
+    priority: 'normal',
+    dueDate: new Date().toISOString().split('T')[0],
+    clientId: '',
+    dealId: '',
   })
 
   const fetchTasks = useCallback(async () => {
@@ -58,17 +81,24 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks()
     fetch('/api/clients').then(r => r.json()).then(setClients)
+    fetch('/api/deals').then(r => r.json()).then(setDeals)
   }, [fetchTasks])
+
+  const clientDeals = deals.filter(d => d.clientId === form.clientId)
 
   async function createTask() {
     if (!form.title.trim()) return
     await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        dealId: form.dealId || null,
+        clientId: form.clientId || null,
+      }),
     })
     setShowForm(false)
-    setForm({ title: '', type: 'follow_up', priority: 'media', dueDate: new Date().toISOString().split('T')[0], clientId: '' })
+    setForm({ title: '', type: 'follow_up', priority: 'normal', dueDate: new Date().toISOString().split('T')[0], clientId: '', dealId: '' })
     fetchTasks()
   }
 
@@ -86,9 +116,10 @@ export default function TasksPage() {
     fetchTasks()
   }
 
-  const priorityVariant = (p: string) => {
-    const map: Record<string, 'danger' | 'warning' | 'default'> = { alta: 'danger', media: 'warning', baixa: 'default' }
-    return map[p] || 'default'
+  const priorityVariant = (p: string): 'danger' | 'warning' | 'default' => {
+    if (p === 'urgente') return 'danger'
+    if (p === 'normal') return 'warning'
+    return 'default'
   }
 
   const today = new Date()
@@ -99,7 +130,6 @@ export default function TasksPage() {
   const upcomingTasks = tasks.filter(t => !t.completed && new Date(t.dueDate) > today)
   const completedTasks = tasks.filter(t => t.completed)
 
-  // Calendar helpers
   const calendarStart = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), calendarDate.getDate() - calendarDate.getDay())
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(calendarStart)
@@ -107,39 +137,78 @@ export default function TasksPage() {
     return d
   })
 
-  const getTasksForDate = (date: Date) => {
-    return tasks.filter(t => new Date(t.dueDate).toDateString() === date.toDateString())
-  }
+  const getTasksForDate = (date: Date) => tasks.filter(t => new Date(t.dueDate).toDateString() === date.toDateString())
 
   const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-500 rounded-full animate-spin" />
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: '4px solid var(--color-border)', borderTopColor: 'var(--color-text-primary)', animation: 'spin 0.8s linear infinite' }} />
       </div>
     )
   }
+
+  const selectStyle: React.CSSProperties = { ...inputStyle }
 
   return (
     <div className="space-y-6 pt-12 lg:pt-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Tarefas e Follow-ups</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-text-primary)' }}>Tarefas e Follow-ups</h1>
+          <p style={{ color: 'var(--color-text-muted)', marginTop: 4, fontSize: 14 }}>
             {overdueTasks.length > 0 && (
-              <span className="text-red-500 font-medium">{overdueTasks.length} atrasada{overdueTasks.length > 1 ? 's' : ''} • </span>
+              <span style={{ color: 'var(--color-danger)', fontWeight: 500 }}>{overdueTasks.length} atrasada{overdueTasks.length > 1 ? 's' : ''} • </span>
             )}
             {todayTasks.length} para hoje • {upcomingTasks.length} futuras
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="flex bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <button onClick={() => setView('list')} className={`px-4 py-2 text-sm font-medium transition-all ${view === 'list' ? 'bg-indigo-500 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Lista</button>
-            <button onClick={() => setView('calendar')} className={`px-4 py-2 text-sm font-medium transition-all ${view === 'calendar' ? 'bg-indigo-500 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Calendário</button>
+          <div style={{ display: 'flex', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 12, overflow: 'hidden' }}>
+            <button
+              onClick={() => setView('list')}
+              style={{
+                padding: '8px 16px',
+                fontSize: 14,
+                fontWeight: 500,
+                background: view === 'list' ? 'var(--color-text-primary)' : 'transparent',
+                color: view === 'list' ? 'var(--color-bg)' : 'var(--color-text-muted)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >Lista</button>
+            <button
+              onClick={() => setView('calendar')}
+              style={{
+                padding: '8px 16px',
+                fontSize: 14,
+                fontWeight: 500,
+                background: view === 'calendar' ? 'var(--color-text-primary)' : 'transparent',
+                color: view === 'calendar' ? 'var(--color-bg)' : 'var(--color-text-muted)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >Calendário</button>
           </div>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-violet-600 transition-all shadow-lg shadow-indigo-500/25">
+          <button
+            onClick={() => setShowForm(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 20px',
+              background: 'var(--color-text-primary)',
+              color: 'var(--color-bg)',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
             <Plus size={18} /> Nova Tarefa
           </button>
         </div>
@@ -147,58 +216,55 @@ export default function TasksPage() {
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
-        <select value={filterCompleted} onChange={(e) => setFilterCompleted(e.target.value)} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
-          <option value="false">Pendentes</option>
-          <option value="true">Concluídas</option>
-          <option value="">Todas</option>
-        </select>
-        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+        {[
+          { value: filterCompleted, onChange: setFilterCompleted, options: [{ value: 'false', label: 'Pendentes' }, { value: 'true', label: 'Concluídas' }, { value: '', label: 'Todas' }] },
+        ].map((f, i) => (
+          <select key={i} value={f.value} onChange={e => f.onChange(e.target.value)} style={{ ...selectStyle, width: 'auto' }}>
+            {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        ))}
+        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ ...selectStyle, width: 'auto' }}>
           <option value="">Todas as prioridades</option>
           {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select>
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ ...selectStyle, width: 'auto' }}>
           <option value="">Todos os tipos</option>
           {TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
         </select>
       </div>
 
       {view === 'list' ? (
-        /* List View */
         <div className="space-y-6">
-          {/* Overdue */}
           {overdueTasks.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2">
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-danger)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangle size={16} /> Atrasadas ({overdueTasks.length})
               </h3>
               <TaskSection tasks={overdueTasks} onToggle={toggleTask} onDelete={deleteTask} priorityVariant={priorityVariant} isOverdue />
             </div>
           )}
 
-          {/* Today */}
           {todayTasks.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-indigo-600 mb-3 flex items-center gap-2">
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Clock size={16} /> Hoje ({todayTasks.length})
               </h3>
               <TaskSection tasks={todayTasks} onToggle={toggleTask} onDelete={deleteTask} priorityVariant={priorityVariant} />
             </div>
           )}
 
-          {/* Upcoming */}
           {upcomingTasks.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-600 mb-3 flex items-center gap-2">
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Calendar size={16} /> Próximas ({upcomingTasks.length})
               </h3>
               <TaskSection tasks={upcomingTasks} onToggle={toggleTask} onDelete={deleteTask} priorityVariant={priorityVariant} />
             </div>
           )}
 
-          {/* Completed */}
           {completedTasks.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-emerald-600 mb-3 flex items-center gap-2">
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-success)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Check size={16} /> Concluídas ({completedTasks.length})
               </h3>
               <TaskSection tasks={completedTasks} onToggle={toggleTask} onDelete={deleteTask} priorityVariant={priorityVariant} />
@@ -206,53 +272,80 @@ export default function TasksPage() {
           )}
 
           {tasks.length === 0 && (
-            <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-slate-100">
-              <CheckSquare size={40} className="text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500">Nenhuma tarefa encontrada</p>
+            <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '64px 32px', textAlign: 'center' }}>
+              <CheckSquare size={40} style={{ color: 'var(--color-text-muted)', margin: '0 auto 12px' }} />
+              <p style={{ color: 'var(--color-text-muted)' }}>Nenhuma tarefa encontrada</p>
             </div>
           )}
         </div>
       ) : (
         /* Calendar View */
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-slate-100">
-            <button onClick={() => { const d = new Date(calendarDate); d.setDate(d.getDate() - 7); setCalendarDate(d) }} className="p-2 rounded-lg hover:bg-slate-100 transition-all">
+        <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottom: '1px solid var(--color-border)' }}>
+            <button
+              onClick={() => { const d = new Date(calendarDate); d.setDate(d.getDate() - 7); setCalendarDate(d) }}
+              style={{ padding: 8, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+            >
               <ChevronLeft size={18} />
             </button>
-            <h3 className="text-sm font-semibold text-slate-700">
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>
               Semana de {weekDays[0].toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
             </h3>
-            <button onClick={() => { const d = new Date(calendarDate); d.setDate(d.getDate() + 7); setCalendarDate(d) }} className="p-2 rounded-lg hover:bg-slate-100 transition-all">
+            <button
+              onClick={() => { const d = new Date(calendarDate); d.setDate(d.getDate() + 7); setCalendarDate(d) }}
+              style={{ padding: 8, borderRadius: 8, background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+            >
               <ChevronRight size={18} />
             </button>
           </div>
-          <div className="grid grid-cols-7 divide-x divide-slate-100">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '1px solid var(--color-border)' }}>
             {weekDays.map((day, i) => {
               const dayTasks = getTasksForDate(day)
               const isToday = day.toDateString() === today.toDateString()
-
               return (
-                <div key={i} className={`min-h-[200px] p-2 ${isToday ? 'bg-indigo-50/50' : ''}`}>
-                  <div className={`text-center mb-2 ${isToday ? 'text-indigo-600' : 'text-slate-500'}`}>
-                    <p className="text-xs font-medium">{dayNames[i]}</p>
-                    <p className={`text-lg font-bold ${isToday ? 'bg-indigo-500 text-white w-8 h-8 rounded-full flex items-center justify-center mx-auto' : ''}`}>
+                <div key={i} style={{ minHeight: 200, padding: 8, background: isToday ? 'var(--color-surface-1)' : 'transparent', borderRight: i < 6 ? '1px solid var(--color-border)' : 'none' }}>
+                  <div style={{ textAlign: 'center', marginBottom: 8 }}>
+                    <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)' }}>{dayNames[i]}</p>
+                    <p style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: isToday ? 'var(--color-bg)' : 'var(--color-text-primary)',
+                      background: isToday ? 'var(--color-text-primary)' : 'transparent',
+                      width: isToday ? 32 : 'auto',
+                      height: isToday ? 32 : 'auto',
+                      borderRadius: isToday ? '50%' : 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '4px auto 0',
+                    }}>
                       {day.getDate()}
                     </p>
                   </div>
-                  <div className="space-y-1">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {dayTasks.map(task => (
                       <div
                         key={task.id}
                         onClick={() => toggleTask(task.id, !task.completed)}
-                        className={`p-1.5 rounded-lg text-xs cursor-pointer transition-all ${
-                          task.completed
-                            ? 'bg-slate-100 text-slate-400 line-through'
-                            : task.priority === 'alta'
-                            ? 'bg-red-50 text-red-700 hover:bg-red-100'
-                            : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                        }`}
+                        style={{
+                          padding: '4px 6px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          cursor: 'pointer',
+                          background: task.completed
+                            ? 'var(--color-surface-1)'
+                            : task.priority === 'urgente'
+                            ? 'var(--color-danger-soft)'
+                            : 'var(--color-surface-2)',
+                          color: task.completed
+                            ? 'var(--color-text-muted)'
+                            : task.priority === 'urgente'
+                            ? 'var(--color-danger)'
+                            : 'var(--color-text-primary)',
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                        }}
                       >
-                        {task.title.length > 30 ? task.title.substring(0, 30) + '...' : task.title}
+                        {task.title.length > 28 ? task.title.substring(0, 28) + '…' : task.title}
                       </div>
                     ))}
                   </div>
@@ -267,39 +360,67 @@ export default function TasksPage() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Nova Tarefa">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Título *</label>
-            <input type="text" value={form.title} onChange={(e) => setForm({...form, title: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="O que precisa ser feito?" />
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Título *</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              style={inputStyle}
+              placeholder="O que precisa ser feito?"
+            />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Tipo</label>
-              <select value={form.type} onChange={(e) => setForm({...form, type: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Tipo</label>
+              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={selectStyle}>
                 {TASK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Prioridade</label>
-              <select value={form.priority} onChange={(e) => setForm({...form, priority: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Prioridade</label>
+              <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })} style={selectStyle}>
                 {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Data de vencimento</label>
+            <input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} style={inputStyle} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Cliente</label>
+            <select
+              value={form.clientId}
+              onChange={e => setForm({ ...form, clientId: e.target.value, dealId: '' })}
+              style={selectStyle}
+            >
+              <option value="">Nenhum</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          {form.clientId && clientDeals.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Data</label>
-              <input type="date" value={form.dueDate} onChange={(e) => setForm({...form, dueDate: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Cliente</label>
-              <select value={form.clientId} onChange={(e) => setForm({...form, clientId: e.target.value})} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--color-text-muted)', marginBottom: 6 }}>Vincular ao serviço (deal)</label>
+              <select value={form.dealId} onChange={e => setForm({ ...form, dealId: e.target.value })} style={selectStyle}>
                 <option value="">Nenhum</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {clientDeals.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
               </select>
             </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button onClick={() => setShowForm(false)} className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-200">Cancelar</button>
-            <button onClick={createTask} className="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-violet-600 shadow-lg shadow-indigo-500/25">Criar Tarefa</button>
+          )}
+
+          <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
+            <button
+              onClick={() => setShowForm(false)}
+              style={{ flex: 1, padding: '10px 16px', background: 'var(--color-surface-1)', border: '1px solid var(--color-border)', borderRadius: 12, fontSize: 14, fontWeight: 500, color: 'var(--color-text-muted)', cursor: 'pointer' }}
+            >Cancelar</button>
+            <button
+              onClick={createTask}
+              style={{ flex: 1, padding: '10px 16px', background: 'var(--color-text-primary)', color: 'var(--color-bg)', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+            >Criar Tarefa</button>
           </div>
         </div>
       </Modal>
@@ -315,37 +436,77 @@ function TaskSection({ tasks, onToggle, onDelete, priorityVariant, isOverdue = f
   isOverdue?: boolean
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 divide-y divide-slate-50">
+    <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 16, overflow: 'hidden' }}>
       {tasks.map((task, i) => (
-        <div key={task.id} className={`flex items-center gap-3 p-4 hover:bg-slate-50/80 transition-all group animate-fade-in-up ${isOverdue ? 'bg-red-50/30' : ''}`} style={{ animationDelay: `${i * 0.02}s` }}>
+        <div
+          key={task.id}
+          className="group animate-fade-in-up"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '14px 16px',
+            borderBottom: i < tasks.length - 1 ? '1px solid var(--color-border)' : 'none',
+            background: isOverdue ? 'rgba(239,68,68,0.03)' : 'transparent',
+            animationDelay: `${i * 0.02}s`,
+          }}
+        >
           <button
             onClick={() => onToggle(task.id, !task.completed)}
-            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-              task.completed
-                ? 'bg-emerald-500 border-emerald-500 text-white'
-                : 'border-slate-300 hover:border-indigo-500'
-            }`}
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              border: `2px solid ${task.completed ? 'var(--color-success)' : 'var(--color-border)'}`,
+              background: task.completed ? 'var(--color-success)' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              cursor: 'pointer',
+              color: '#fff',
+              transition: 'all 0.15s',
+            }}
           >
-            {task.completed && <Check size={12} />}
+            {task.completed && <Check size={11} />}
           </button>
 
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium ${task.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+              textDecoration: task.completed ? 'line-through' : 'none',
+            }}>
               {task.title}
             </p>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
               <Badge variant={priorityVariant(task.priority)}>{getPriorityLabel(task.priority)}</Badge>
-              <span className="text-xs text-slate-400">{getTaskTypeLabel(task.type)}</span>
-              {task.client && <span className="text-xs text-indigo-500 font-medium">{task.client.name}</span>}
-              {task.automated && <Badge variant="purple">Auto</Badge>}
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{getTaskTypeLabel(task.type)}</span>
+              {task.client && <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 500 }}>{task.client.name}</span>}
+              {task.automated && <Badge variant="info">Auto</Badge>}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: isOverdue ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
               {formatDate(task.dueDate)}
             </span>
-            <button onClick={() => onDelete(task.id)} className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all">
+            <button
+              onClick={() => onDelete(task.id)}
+              className="opacity-0 group-hover:opacity-100"
+              style={{
+                padding: 6,
+                borderRadius: 8,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-danger)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-danger-soft)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-text-muted)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
+            >
               <Trash2 size={14} />
             </button>
           </div>

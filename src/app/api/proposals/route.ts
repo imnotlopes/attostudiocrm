@@ -28,21 +28,30 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const setupValue = body.setupValue ? parseFloat(body.setupValue) : null
+    const monthlyValue = body.monthlyValue ? parseFloat(body.monthlyValue) : null
+    const investment = setupValue !== null || monthlyValue !== null
+      ? (setupValue || 0) + (monthlyValue || 0)
+      : body.investment ? parseFloat(body.investment) : null
+
     const proposal = await prisma.proposal.create({
       data: {
         clientId: body.clientId,
         dealId: body.dealId || null,
         title: body.title,
         serviceType: body.serviceType,
+        packageTier: body.packageTier || null,
         summary: body.summary || null,
         scope: body.scope || null,
         timeline: body.timeline || null,
-        investment: body.investment ? parseFloat(body.investment) : null,
+        setupValue,
+        monthlyValue,
+        investment,
         paymentTerms: body.paymentTerms || null,
         status: body.status || 'rascunho',
         version: body.version || 1,
         shareToken: uuidv4(),
-      },
+      } as Parameters<typeof prisma.proposal.create>[0]['data'],
       include: { client: true },
     })
 
@@ -67,12 +76,26 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     const { id, ...data } = body
 
+    const setupValue = data.setupValue !== undefined
+      ? (data.setupValue ? parseFloat(data.setupValue) : null)
+      : undefined
+    const monthlyValue = data.monthlyValue !== undefined
+      ? (data.monthlyValue ? parseFloat(data.monthlyValue) : null)
+      : undefined
+
+    const investment =
+      setupValue !== undefined || monthlyValue !== undefined
+        ? (setupValue || 0) + (monthlyValue || 0)
+        : data.investment ? parseFloat(data.investment) : undefined
+
     const proposal = await prisma.proposal.update({
       where: { id },
       data: {
         ...data,
-        investment: data.investment ? parseFloat(data.investment) : undefined,
-      },
+        setupValue,
+        monthlyValue,
+        investment,
+      } as Parameters<typeof prisma.proposal.update>[0]['data'],
       include: { client: true },
     })
 

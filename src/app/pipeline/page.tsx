@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Phone,
   Mail,
+  Trash2,
 } from 'lucide-react'
 import {
   formatCurrency,
@@ -16,6 +17,7 @@ import {
   getUrgencyColor,
   getServiceLabel,
   getStageLabel,
+  getPackageLabel,
   SERVICE_TYPES,
   STAGES,
 } from '@/lib/utils'
@@ -30,6 +32,8 @@ interface Deal {
     company: string | null
     whatsapp: string | null
     email: string | null
+    niche: string | null
+    packageTier: string | null
   }
   serviceType: string
   estimatedValue: number
@@ -79,10 +83,11 @@ export default function PipelinePage() {
   const [lostReason, setLostReason] = useState('')
   const [showLostModal, setShowLostModal] = useState(false)
   const [pendingLostDealId, setPendingLostDealId] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const [newDeal, setNewDeal] = useState({
     clientId: '',
-    serviceType: 'site',
+    serviceType: 'gmn',
     estimatedValue: '',
   })
 
@@ -121,7 +126,7 @@ export default function PipelinePage() {
       body: JSON.stringify(newDeal),
     })
     setShowNewDeal(false)
-    setNewDeal({ clientId: '', serviceType: 'site', estimatedValue: '' })
+    setNewDeal({ clientId: '', serviceType: 'gmn', estimatedValue: '' })
     fetchDeals()
   }
 
@@ -153,6 +158,14 @@ export default function PipelinePage() {
     setShowLostModal(false)
     setLostReason('')
     setPendingLostDealId(null)
+    fetchDeals()
+  }
+
+  async function deleteDeal() {
+    if (!selectedDeal) return
+    await fetch(`/api/deals?id=${selectedDeal.id}`, { method: 'DELETE' })
+    setSelectedDeal(null)
+    setConfirmDelete(false)
     fetchDeals()
   }
 
@@ -254,7 +267,10 @@ export default function PipelinePage() {
                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                     style={{ background: labelColor }}
                   />
-                  <h3 className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color: labelColor }}>
+                  <h3
+                    className="text-xs font-semibold uppercase tracking-wide truncate"
+                    style={{ color: labelColor }}
+                  >
                     {getStageLabel(stage)}
                   </h3>
                   <span className="text-xs text-[var(--color-text-muted)] tabular-nums">
@@ -302,18 +318,41 @@ export default function PipelinePage() {
                         />
                       </div>
 
-                      <p className="text-[11px] text-[var(--color-text-muted)] mt-2">
-                        {getServiceLabel(deal.serviceType)}
-                      </p>
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] text-[var(--color-text-muted)]">
+                          {getServiceLabel(deal.serviceType)}
+                        </span>
+                        {deal.client.niche && (
+                          <>
+                            <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
+                            <span className="text-[11px] text-[var(--color-text-muted)] truncate">
+                              {deal.client.niche}
+                            </span>
+                          </>
+                        )}
+                      </div>
 
-                      <div className="mt-2 flex items-center justify-between">
+                      <div className="mt-2 flex items-center justify-between gap-2">
                         <span className="text-sm font-semibold tabular-nums">
                           {formatCurrency(deal.estimatedValue)}
                         </span>
-                        <span className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 tabular-nums">
-                          <Clock size={11} />
-                          {days}d
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {deal.client.packageTier && (
+                            <span
+                              className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                              style={{
+                                background: 'var(--color-success-soft)',
+                                color: 'var(--color-success)',
+                              }}
+                            >
+                              {getPackageLabel(deal.client.packageTier)}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 tabular-nums">
+                            <Clock size={11} />
+                            {days}d
+                          </span>
+                        </div>
                       </div>
 
                       {deal.tasks.length > 0 && (
@@ -376,7 +415,7 @@ export default function PipelinePage() {
               type="number"
               value={newDeal.estimatedValue}
               onChange={(e) => setNewDeal({ ...newDeal, estimatedValue: e.target.value })}
-              placeholder="5000"
+              placeholder="1997"
               className="w-full px-3 py-2 rounded-lg text-sm bg-[var(--color-surface-2)] border border-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success)]"
             />
           </Field>
@@ -452,13 +491,21 @@ export default function PipelinePage() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => setSelectedDeal(null)}
-                className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
-                aria-label="Fechar"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
+                  title="Excluir negócio"
+                >
+                  <Trash2 size={15} />
+                </button>
+                <button
+                  onClick={() => setSelectedDeal(null)}
+                  className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-2)]"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </header>
 
             <div className="p-5 space-y-6">
@@ -471,7 +518,34 @@ export default function PipelinePage() {
                   label="Dias na etapa"
                   value={`${daysSince(selectedDeal.stageEnteredAt)} dias`}
                 />
+                {selectedDeal.client.niche && (
+                  <InfoTile label="Nicho" value={selectedDeal.client.niche} />
+                )}
+                {selectedDeal.client.packageTier && (
+                  <InfoTile
+                    label="Pacote"
+                    value={getPackageLabel(selectedDeal.client.packageTier)}
+                    highlight="success"
+                  />
+                )}
               </div>
+
+              {/* Lost reason */}
+              {selectedDeal.lostReason && (
+                <div
+                  className="rounded-lg px-3 py-2.5 border text-sm"
+                  style={{
+                    borderColor: 'var(--color-danger)',
+                    background: 'var(--color-danger-soft)',
+                    color: 'var(--color-danger)',
+                  }}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide mb-1">
+                    Motivo da perda
+                  </p>
+                  {selectedDeal.lostReason}
+                </div>
+              )}
 
               {/* Contact */}
               {(selectedDeal.client.whatsapp || selectedDeal.client.email) && (
@@ -581,7 +655,6 @@ export default function PipelinePage() {
                   <button
                     onClick={addActivity}
                     className="h-9 px-3 rounded-md bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90"
-                    aria-label="Adicionar atividade"
                   >
                     <Send size={14} />
                   </button>
@@ -610,6 +683,34 @@ export default function PipelinePage() {
           </aside>
         </>
       )}
+
+      {/* Confirm delete modal */}
+      <Modal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Excluir negócio?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Isso removerá o negócio e todo o histórico vinculado. Essa ação não pode ser desfeita.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="flex-1 h-9 rounded-lg text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-2)]"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={deleteDeal}
+              className="flex-1 h-9 rounded-lg text-sm font-semibold text-white"
+              style={{ background: 'var(--color-danger)' }}
+            >
+              Excluir
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -625,11 +726,43 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-function InfoTile({ label, value }: { label: string; value: string }) {
+function InfoTile({
+  label,
+  value,
+  highlight,
+}: {
+  label: string
+  value: string
+  highlight?: 'success' | 'danger'
+}) {
   return (
-    <div className="rounded-lg px-3 py-2.5 border border-[var(--color-border)]">
+    <div
+      className="rounded-lg px-3 py-2.5 border border-[var(--color-border)]"
+      style={
+        highlight
+          ? {
+              background:
+                highlight === 'success'
+                  ? 'var(--color-success-soft)'
+                  : 'var(--color-danger-soft)',
+            }
+          : undefined
+      }
+    >
       <p className="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]">{label}</p>
-      <p className="text-sm font-medium mt-0.5 truncate">{value}</p>
+      <p
+        className="text-sm font-medium mt-0.5 truncate"
+        style={
+          highlight
+            ? {
+                color:
+                  highlight === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
+              }
+            : undefined
+        }
+      >
+        {value}
+      </p>
     </div>
   )
 }

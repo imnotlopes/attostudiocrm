@@ -14,58 +14,54 @@ model User {
 }
 
 model Client {
-  id                 String    @id @default(cuid())
+  id                 String     @id @default(cuid())
   name               String
   company            String?
   whatsapp           String?
   email              String?
   segment            String?
   leadSource         String?
-  niche              String?
+  status             String     @default("lead")
+  notes              String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
   acquisitionChannel String?
+  niche              String?
   city               String?
-  serviceInterest    String?
-  packageTier        String?
-  hasSite            Boolean?
   hasGmn             Boolean?
+  hasSite            Boolean?
   nextFollowUpAt     DateTime?
   objection          String?
-  status             String    @default("lead")
-  notes              String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-
-  deals      Deal[]
-  proposals  Proposal[]
-  contracts  Contract[]
-  tasks      Task[]
-  activities Activity[]
+  packageTier        String?
+  serviceInterest    String?
+  activities         Activity[]
+  contracts          Contract[]
+  deals              Deal[]
+  proposals          Proposal[]
+  tasks              Task[]
 }
 
 model Deal {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   clientId       String
-  client         Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   serviceType    String
   estimatedValue Float
-  stage          String   @default("lead_novo")
-  lastActivityAt DateTime @default(now())
-  stageEnteredAt DateTime @default(now())
+  stage          String     @default("lead_novo")
+  lastActivityAt DateTime   @default(now())
+  stageEnteredAt DateTime   @default(now())
   lostReason     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  proposal   Proposal?
-  activities Activity[]
-  tasks      Task[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  activities     Activity[]
+  client         Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  proposal       Proposal?
+  tasks          Task[]
 }
 
 model Proposal {
   id           String   @id @default(cuid())
   clientId     String
-  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   dealId       String?  @unique
-  deal         Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
   title        String
   serviceType  String
   summary      String?
@@ -78,16 +74,19 @@ model Proposal {
   shareToken   String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  monthlyValue Float?
+  packageTier  String?
+  setupValue   Float?
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deal         Deal?    @relation(fields: [dealId], references: [id])
 }
 
 model Contract {
   id           String    @id @default(cuid())
   clientId     String
-  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   service      String
   type         String
   monthlyValue Float?
-  setupValue   Float?
   totalValue   Float?
   startDate    DateTime
   endDate      DateTime?
@@ -95,19 +94,20 @@ model Contract {
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-
-  payments Payment[]
+  setupValue   Float?
+  client       Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  payments     Payment[]
 }
 
 model Payment {
   id         String    @id @default(cuid())
   contractId String
-  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
   amount     Float
   dueDate    DateTime
   status     String    @default("pendente")
   paidAt     DateTime?
   createdAt  DateTime  @default(now())
+  contract   Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
 }
 
 model Task {
@@ -118,12 +118,12 @@ model Task {
   dueDate   DateTime
   completed Boolean  @default(false)
   clientId  String?
-  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   dealId    String?
-  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
   automated Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
 }
 
 model Activity {
@@ -131,8 +131,8 @@ model Activity {
   type      String
   content   String
   clientId  String?
-  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   dealId    String?
-  deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deal      Deal?    @relation(fields: [dealId], references: [id])
 }
