@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
       include: {
         deals: true,
         contracts: true,
+        partner: { select: { id: true, name: true } },
         _count: { select: { activities: true, tasks: true } },
       },
       orderBy: { updatedAt: 'desc' },
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
         objection: body.objection || null,
         status: body.status || 'lead',
         notes: body.notes || null,
+        partnerId: body.partnerId || null,
       },
     })
 

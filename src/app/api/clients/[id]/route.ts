@@ -48,6 +48,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         objection: body.objection || null,
         status: body.status,
         notes: body.notes || null,
+        partnerId: body.partnerId || null,
       },
     })
 

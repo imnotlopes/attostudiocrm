@@ -44,20 +44,20 @@ export async function GET() {
       }))
       .sort((a, b) => b.rate - a.rate)
 
-    // Receita do mês: setup (contratos iniciados no mês) + recurring (MRR)
-    const contractsThisMonth = await prisma.contract.findMany({
-      where: { startDate: { gte: startOfMonth, lte: endOfMonth } },
+    // Receita do mês: deals fechados no mês + MRR de contratos recorrentes ativos
+    const wonDealsThisMonth = await prisma.deal.findMany({
+      where: {
+        stage: 'fechado_ganho',
+        stageEnteredAt: { gte: startOfMonth, lte: endOfMonth },
+      },
     })
-    const setupRevenue = contractsThisMonth.reduce((sum, c) => {
-      if (c.type === 'unico') return sum + (c.totalValue || 0)
-      return sum + (c.setupValue || 0)
-    }, 0)
+    const setupRevenue = wonDealsThisMonth.reduce((sum, d) => sum + d.estimatedValue, 0)
 
     const activeRecurring = await prisma.contract.findMany({
       where: { status: 'ativo', type: 'recorrente' },
     })
     const mrr = activeRecurring.reduce((sum, c) => sum + (c.monthlyValue || 0), 0)
-    const recurringRevenue = mrr // mensalidades cobradas neste mês
+    const recurringRevenue = mrr
 
     const monthRevenue = setupRevenue + recurringRevenue
 

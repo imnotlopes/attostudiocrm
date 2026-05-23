@@ -119,7 +119,7 @@ export default function DashboardPage() {
           icon={<Wallet size={18} />}
           label="Receita do Mês"
           value={formatCurrency(data.monthRevenue)}
-          hint={`Setup ${formatCurrency(data.revenueBreakdown.setup)} · Mensal ${formatCurrency(data.revenueBreakdown.recurring)}`}
+          hint={`Vendas ${formatCurrency(data.revenueBreakdown.setup)} · MRR ${formatCurrency(data.revenueBreakdown.recurring)}`}
           accent={data.monthRevenue > 0 ? 'success' : 'neutral'}
         />
         <StatCard

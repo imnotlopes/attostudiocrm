@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Plus, Search, Download, Users, ChevronRight, Edit2, Trash2,
-  AlertCircle, Phone, MapPin,
+  AlertCircle, Phone, MapPin, Handshake,
 } from 'lucide-react'
 import {
   getStatusLabel, getLeadSourceLabel, getServiceLabel, getPackageLabel,
@@ -12,6 +12,11 @@ import {
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Link from 'next/link'
+
+interface Partner {
+  id: string
+  name: string
+}
 
 interface Client {
   id: string
@@ -31,6 +36,8 @@ interface Client {
   status: string
   notes: string | null
   createdAt: string
+  partnerId: string | null
+  partner: Partner | null
   deals: Array<{ id: string; estimatedValue: number; stage: string }>
   contracts: Array<{ id: string; totalValue: number | null; monthlyValue: number | null }>
 }
@@ -40,10 +47,12 @@ const emptyForm = {
   niche: '', city: '', serviceInterest: '', packageTier: '',
   acquisitionChannel: '', hasSite: false, hasGmn: false,
   nextFollowUpAt: '', objection: '', status: 'lead', notes: '',
+  partnerId: '',
 }
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
+  const [partners, setPartners] = useState<Partner[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -70,6 +79,13 @@ export default function ClientsPage() {
 
   useEffect(() => { fetchClients() }, [fetchClients])
 
+  useEffect(() => {
+    fetch('/api/partners')
+      .then(r => r.json())
+      .then(setPartners)
+      .catch(console.error)
+  }, [])
+
   function openEdit(client: Client) {
     setEditingClient(client)
     setFormData({
@@ -90,6 +106,7 @@ export default function ClientsPage() {
       objection: client.objection || '',
       status: client.status,
       notes: client.notes || '',
+      partnerId: client.partnerId || '',
     })
     setShowForm(true)
   }
@@ -292,6 +309,15 @@ export default function ClientsPage() {
                           via {getLeadSourceLabel(client.acquisitionChannel)}
                         </span>
                       )}
+                      {client.partner && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
+                          style={{ background: 'var(--color-surface-2)', color: 'var(--color-text-muted)' }}
+                        >
+                          <Handshake size={9} />
+                          {client.partner.name}
+                        </span>
+                      )}
                       {client.packageTier && (
                         <span
                           className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
@@ -413,6 +439,12 @@ export default function ClientsPage() {
                 <select value={formData.acquisitionChannel} onChange={e => set('acquisitionChannel', e.target.value)} className={input}>
                   <option value="">Selecione</option>
                   {LEAD_SOURCES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </Field>
+              <Field label="Parceiro indicador">
+                <select value={formData.partnerId} onChange={e => set('partnerId', e.target.value)} className={input}>
+                  <option value="">Nenhum</option>
+                  {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </Field>
               <Field label="Serviço de interesse">

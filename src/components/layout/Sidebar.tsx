@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Handshake,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/clients', label: 'Clientes', icon: Users },
+  { href: '/partners', label: 'Parceiros', icon: Handshake },
   { href: '/proposals', label: 'Propostas', icon: FileText },
   { href: '/contracts', label: 'Contratos', icon: ScrollText },
   { href: '/tasks', label: 'Tarefas', icon: CheckSquare },

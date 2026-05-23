@@ -13,6 +13,20 @@ model User {
   password String
 }
 
+model Partner {
+  id        String   @id @default(cuid())
+  name      String
+  company   String?
+  whatsapp  String?
+  email     String?
+  niche     String?
+  notes     String?
+  status    String   @default("ativo")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clients   Client[]
+}
+
 model Client {
   id                 String     @id @default(cuid())
   name               String
@@ -34,6 +48,8 @@ model Client {
   objection          String?
   packageTier        String?
   serviceInterest    String?
+  partnerId          String?
+  partner            Partner?   @relation(fields: [partnerId], references: [id])
   activities         Activity[]
   contracts          Contract[]
   deals              Deal[]
