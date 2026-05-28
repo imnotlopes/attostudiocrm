@@ -142,6 +142,24 @@ model Task {
   deal      Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
 }
 
+model Lead {
+  id             String    @id @default(cuid())
+  name           String
+  company        String?
+  whatsapp       String?
+  email          String?
+  niche          String?
+  city           String?
+  source         String?
+  callStatus     String    @default("nao_contatado")
+  lastCallAt     DateTime?
+  nextFollowUpAt DateTime?
+  notes          String?
+  callNotes      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
 model Activity {
   id        String   @id @default(cuid())
   type      String

@@ -59,7 +59,19 @@ export async function GET() {
     const mrr = activeRecurring.reduce((sum, c) => sum + (c.monthlyValue || 0), 0)
     const recurringRevenue = mrr
 
-    const monthRevenue = setupRevenue + recurringRevenue
+    const uniqueContractsThisMonth = await prisma.contract.findMany({
+      where: {
+        type: 'unico',
+        status: 'ativo',
+        startDate: { gte: startOfMonth, lte: endOfMonth },
+      },
+    })
+    const uniqueRevenue = uniqueContractsThisMonth.reduce(
+      (sum, c) => sum + (c.totalValue || 0) + (c.setupValue || 0),
+      0,
+    )
+
+    const monthRevenue = setupRevenue + recurringRevenue + uniqueRevenue
 
     // Follow-ups atrasados (tasks de tipo follow_up vencidas)
     const overdueFollowUps = await prisma.task.count({
@@ -120,7 +132,7 @@ export async function GET() {
     return NextResponse.json({
       activeLeads,
       monthRevenue,
-      revenueBreakdown: { setup: setupRevenue, recurring: recurringRevenue },
+      revenueBreakdown: { setup: setupRevenue, recurring: recurringRevenue, unique: uniqueRevenue },
       mrr,
       pendingTasks,
       overdueFollowUps,
