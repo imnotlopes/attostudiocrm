@@ -15,6 +15,7 @@ import {
   X,
   Handshake,
   PhoneCall,
+  Target,
 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -25,6 +26,7 @@ const navItems = [
   { href: '/clients', label: 'Clientes', icon: Users },
   { href: '/partners', label: 'Parceiros', icon: Handshake },
   { href: '/leads', label: 'Cold Calls', icon: PhoneCall },
+  { href: '/prospects', label: 'Prospecção', icon: Target },
   { href: '/proposals', label: 'Propostas', icon: FileText },
   { href: '/contracts', label: 'Contratos', icon: ScrollText },
   { href: '/tasks', label: 'Tarefas', icon: CheckSquare },

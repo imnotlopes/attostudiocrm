@@ -160,6 +160,24 @@ model Lead {
   updatedAt      DateTime  @updatedAt
 }
 
+model Prospect {
+  id             String    @id @default(cuid())
+  name           String
+  company        String?
+  whatsapp       String?
+  email          String?
+  niche          String?
+  city           String?
+  source         String?
+  stage          String    @default("visualizaram")
+  estimatedValue Float?
+  meetingAt      DateTime?
+  notes          String?
+  stageEnteredAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
 model Activity {
   id        String   @id @default(cuid())
   type      String
